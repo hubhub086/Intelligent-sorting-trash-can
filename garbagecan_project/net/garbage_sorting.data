@@ -1,0 +1,6 @@
+classes = 7
+train = ./scripts/2022_train.txt
+#valid = ./scripts/2022_test.txt 
+valid = ./scripts/2022_val.txt
+names = garbage_sorting.names
+backup = backup	
