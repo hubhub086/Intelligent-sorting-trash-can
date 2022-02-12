@@ -1,4 +1,4 @@
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer, QMediaPlaylist
 from Ui_test import Ui_MainWindow
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import *
@@ -8,6 +8,8 @@ import cv2
 
 from thread import cameraThread, garbage
 from plot import drawplot, fig2data
+CAMERA = 1
+DATA_PLOT = 0
 
 
 class Window(QMainWindow, Ui_MainWindow):
@@ -21,12 +23,19 @@ class Window(QMainWindow, Ui_MainWindow):
         self.setObjectName('win')  # 设置窗口名，相当于CSS中的ID
         self.setStyleSheet('#win{border-image:url(../data/background.jpg);}')  # 设置图片的相对路径
         # 播放器
-        self.player = QMediaPlayer()
-        self.player.setVideoOutput(self.wgt_player)
-        self.player.setMedia(QMediaContent(
+        self.playerlist = QMediaPlaylist()
+        self.playerlist.addMedia(QMediaContent(
             QUrl.fromLocalFile("/home/caosongliang/VSCodeProject/python/garbagecan_project/data/garbage_sorting.mp4")))
+        self.playerlist.setPlaybackMode(3)  # loop play mode
+        self.player = QMediaPlayer()
+        self.player.setPlaylist(self.playerlist)
+        self.player.setVideoOutput(self.wgt_player)
+        # self.player.setMedia(QMediaContent(
+        #     QUrl.fromLocalFile("/home/caosongliang/VSCodeProject/python/garbagecan_project/data/garbage_sorting.mp4")))
+        self.player.play()
+        self.player.pause()
         # 按钮
-        self.data_camera_flag = 0
+        self.data_camera_flag = CAMERA
         self.btn_select.clicked.connect(self.open)
         self.btn_play.clicked.connect(self.playPlay)
         self.btn_pause.clicked.connect(self.playPause)
@@ -69,23 +78,23 @@ class Window(QMainWindow, Ui_MainWindow):
         self.thread.start()
 
     def dataflagchange(self):
-        print("flag_camera")
-        self.data_camera_flag = 0
+        print("flag_data")
+        self.data_camera_flag = DATA_PLOT
+        self.showplot(garbage)
 
     def carmeraflagchange(self):
-        print("flag_data")
-        self.data_camera_flag = 1
+        print("flag_camera")
+        self.data_camera_flag = CAMERA
 
     def showimageordata(self, img):
-        if self.data_camera_flag:
+        if self.data_camera_flag == CAMERA:
             img = cv2.resize(img, (420, 280))
             frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             showframe = qimage2ndarray.array2qimage(frame)
             # showframe = QImage(frame.data, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
             self.carmeralabel.setPixmap(QPixmap.fromImage(showframe))
             self.carmeralabel.show()
-        else:
-            print("data_analyze")
+        '''else:
             figure = drawplot(garbage)
             img = fig2data(figure)
             img = cv2.resize(img, (420, 280))
@@ -93,9 +102,9 @@ class Window(QMainWindow, Ui_MainWindow):
             showframe = qimage2ndarray.array2qimage(frame)
             self.carmeralabel.setPixmap(QPixmap.fromImage(showframe))
             self.carmeralabel.show()
+        '''
 
-
-    # 修改表格信息
+    # 修改表格信息 & show plot
     def tabelDisplay(self, items):
         self.tableWidget.clearContents()
         self.tableWidget.setRowCount(0)
@@ -109,6 +118,19 @@ class Window(QMainWindow, Ui_MainWindow):
                 item.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
                 self.tableWidget.setItem(row, j, item)
 
+        if self.data_camera_flag == DATA_PLOT:
+            self.showplot(items)
+
+    def showplot(self, items):
+        figure = drawplot(items)
+        img = fig2data(figure)
+        img = cv2.resize(img, (420, 280))
+        frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        showframe = qimage2ndarray.array2qimage(frame)
+        self.carmeralabel.setPixmap(QPixmap.fromImage(showframe))
+        self.carmeralabel.show()
+
+    """video player"""
     def open(self):
         self.player.setMedia(QMediaContent(QFileDialog.getOpenFileUrl()[0]))
         self.player.play()
@@ -130,6 +152,9 @@ class Window(QMainWindow, Ui_MainWindow):
     def getPosition(self, p):
         self.sld_duration.setValue(p)
         self.displayTime(self.sld_duration.maximum() - p)
+        if self.sld_duration.maximum() - p == 0:
+            print("finish video")
+            # self.player.play()
 
     # 显示剩余时间
     def displayTime(self, ms):

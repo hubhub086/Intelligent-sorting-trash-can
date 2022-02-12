@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import PIL.Image as Image
 import numpy as np
-import time
+
 
 class_num = 7
 class_name = ['fruit', 'bricks', 'bottle', 'cigarette', 'vegetable', 'can', 'battery']
@@ -21,7 +21,7 @@ def drawplot(garbage):
         radii = np.append(radii, count)
 
     if len(garbage):
-        radii = radii / len(garbage) * 100
+        radii = radii / len(garbage) * 10
     figure = plt.figure()
     ax = plt.subplot(111, projection='polar')
     bars = ax.bar(theta, radii, width=width, bottom=0.0)
